@@ -1,18 +1,6 @@
-from colorama import Fore, init, Style as ColorStyle
-from getpass import getpass
 import mysql.connector
 from mysql.connector import Error
 from datetime import datetime
-from tabulate import tabulate
-
-
-init(autoreset=True)
-
-
-def cinput(c1, p, c2):
-    print(c1 + p, end="")
-    value = input(c2).strip()
-    return value
 
 
 class StudyPlanner:
@@ -30,7 +18,7 @@ class StudyPlanner:
             )
             return connection
         except Error as e:
-            print(Fore.RED + f"Error: {e}")
+            print(f"Error: {e}")
             return None
 
     def initialize_database(self):
@@ -64,18 +52,18 @@ class StudyPlanner:
             """
             )
         except Error as e:
-            print(Fore.RED + f"Error while initializing the database: {e}")
+            print(f"Error while initializing the database: {e}")
         finally:
             cursor.close()
 
     def register_user(self):
-        print(ColorStyle.BRIGHT + Fore.MAGENTA + "\n---------- Register ----------")
-        username = cinput(Fore.MAGENTA, "Enter a username: ", Fore.CYAN)
-        password = getpass(Fore.MAGENTA + "Enter a password: ").strip()
-        re_password = getpass(Fore.MAGENTA + "Re-enter your password: ").strip()
+        print("\n---------- Register ----------")
+        username = input("Enter a username: ")
+        password = input("Enter a password: ").strip()
+        re_password = input("Re-enter your password: ").strip()
 
         if password != re_password:
-            print(Fore.RED + "Passwords do not match!")
+            print("Passwords do not match!")
             return False
 
         cursor = self.db_connection.cursor()
@@ -85,16 +73,16 @@ class StudyPlanner:
                 (username, password),
             )
             self.db_connection.commit()
-            print(Fore.GREEN + "Registration successful!")
+            print("Registration successful!")
         except Error as e:
-            print(Fore.RED + f"Error: {e}")
+            print(f"Error: {e}")
         finally:
             cursor.close()
 
     def login(self):
-        print(Fore.MAGENTA + "\n---------- Login ----------")
-        username = cinput(Fore.MAGENTA, "Enter your username: ", Fore.CYAN)
-        password = getpass(Fore.MAGENTA + "Enter your password: ").strip()
+        print("\n---------- Login ----------")
+        username = input("Enter your username: ")
+        password = input("Enter your password: ").strip()
 
         cursor = self.db_connection.cursor()
         try:
@@ -105,41 +93,32 @@ class StudyPlanner:
             user = cursor.fetchone()
             if user:
                 self.current_user_id = user[0]
-                print(Fore.GREEN + "Login successful!")
+                print("Login successful!")
                 return True
             else:
-                print(Fore.RED + "Invalid credentials.")
+                print("Invalid credentials.")
                 return False
         finally:
             cursor.close()
 
     def schedule_task(self):
-        print(
-            ColorStyle.BRIGHT + Fore.MAGENTA + "\n---------- Schedule a Task ----------"
-        )
+        print("\n---------- Schedule a Task ----------")
 
-        subject = cinput(Fore.MAGENTA, "Enter the subject: ", Fore.CYAN).strip()
-        title = cinput(Fore.MAGENTA, "Enter the title of the task: ", Fore.CYAN).strip()
-        hours = cinput(
-            Fore.MAGENTA, "Enter the number of hours to study: ", Fore.CYAN
-        ).strip()
+        subject = input("Enter the subject: ").strip()
+        title = input("Enter the title of the task: ").strip()
+        hours = input("Enter the number of hours to study: ").strip()
 
         while not hours.isdigit():
-            print(Fore.RED + "Please enter a valid number of hours.")
-            hours = input(Fore.CYAN + "Enter the number of hours to study: ").strip()
+            print("Please enter a valid number of hours.")
+            hours = input("Enter the number of hours to study: ").strip()
 
         hours = int(hours)
-        due_date = cinput(
-            Fore.MAGENTA, "Enter the due date (YYYY-MM-DD): ", Fore.CYAN
-        ).strip()
+        due_date = input("Enter the due date (YYYY-MM-DD): ").strip()
 
         try:
             due_date_obj = datetime.strptime(due_date, "%Y-%m-%d")
         except ValueError:
-            print(
-                Fore.RED
-                + "Invalid date format. Please enter the date in YYYY-MM-DD format."
-            )
+            print("Invalid date format. Please enter the date in YYYY-MM-DD format.")
             return
 
         cursor = self.db_connection.cursor()
@@ -152,19 +131,17 @@ class StudyPlanner:
                 (self.current_user_id, subject, title, hours, due_date_obj),
             )
             self.db_connection.commit()
-            print(Fore.GREEN + "Task scheduled successfully!")
+            print("Task scheduled successfully!")
         except Error as e:
-            print(Fore.RED + f"Error while scheduling task: {e}")
+            print(f"Error while scheduling task: {e}")
         finally:
             cursor.close()
 
     def edit_task(self):
-        print(Fore.MAGENTA + "\n---------- Edit Task ----------")
+        print("\n---------- Edit Task ----------")
         cursor = self.db_connection.cursor(dictionary=True)
 
-        task_id = cinput(
-            Fore.MAGENTA, "\nEnter the ID of the task you want to edit: ", Fore.CYAN
-        ).strip()
+        task_id = input("\nEnter the ID of the task you want to edit: ").strip()
 
         cursor.execute(
             "SELECT * FROM tasks WHERE id = %s AND user_id = %s",
@@ -173,48 +150,30 @@ class StudyPlanner:
         task = cursor.fetchone()
 
         if not task:
-            print(Fore.RED + "Invalid task ID.")
+            print("Invalid task ID.")
             cursor.close()
             return
 
         status_value = 0 if task["status"] == "pending" else 1
         subject = (
-            cinput(
-                Fore.MAGENTA,
-                f"Enter new subject (current: {task['subject']}): ",
-                Fore.CYAN,
-            ).strip()
+            input(f"Enter new subject (current: {task['subject']}): ").strip()
             or task["subject"]
         )
         title = (
-            cinput(
-                Fore.MAGENTA,
-                f"Enter new title (current: {task['title']}): ",
-                Fore.CYAN,
-            ).strip()
+            input(f"Enter new title (current: {task['title']}): ").strip()
             or task["title"]
         )
         hours = (
-            cinput(
-                Fore.MAGENTA,
-                f"Enter new study hours (current: {task['hours']}): ",
-                Fore.CYAN,
-            ).strip()
+            input(f"Enter new study hours (current: {task['hours']}): ").strip()
             or task["hours"]
         )
         due_date = (
-            cinput(
-                Fore.MAGENTA,
-                f"Enter new due date (current: {task['due_date']}): ",
-                Fore.CYAN,
-            ).strip()
+            input(f"Enter new due date (current: {task['due_date']}): ").strip()
             or task["due_date"]
         )
         status = (
-            cinput(
-                Fore.MAGENTA,
-                f"Enter new status (current: {'Completed' if task['status'] == 1 else 'Pending'}): ",
-                Fore.CYAN,
+            input(
+                f"Enter new status (current: {'Completed' if task['status'] == 1 else 'Pending'}): "
             )
             .strip()
             .lower()
@@ -240,19 +199,17 @@ class StudyPlanner:
                 ),
             )
             self.db_connection.commit()
-            print(Fore.GREEN + "Task updated successfully!")
+            print("Task updated successfully!")
         except Error as e:
-            print(Fore.RED + f"Error updating task: {e}")
+            print(f"Error updating task: {e}")
         finally:
             cursor.close()
 
     def delete_task(self):
-        print(Fore.MAGENTA + "\n---------- Delete Task ----------")
+        print("\n---------- Delete Task ----------")
 
         cursor = self.db_connection.cursor(dictionary=True)
-        task_id = cinput(
-            Fore.MAGENTA, "\nEnter the ID of the task you want to delete: ", Fore.CYAN
-        ).strip()
+        task_id = input("\nEnter the ID of the task you want to delete: ").strip()
 
         cursor.execute(
             "SELECT * FROM tasks WHERE id = %s AND user_id = %s",
@@ -261,15 +218,13 @@ class StudyPlanner:
         task = cursor.fetchone()
 
         if not task:
-            print(Fore.RED + "Invalid task ID.")
+            print("Invalid task ID.")
             cursor.close()
             return
 
         confirm = (
-            cinput(
-                Fore.MAGENTA,
-                f"Are you sure you want to delete the task '{task['title']}'? (y/n): ",
-                Fore.CYAN,
+            input(
+                f"Are you sure you want to delete the task '{task['title']}'? (y/n): "
             )
             .strip()
             .lower()
@@ -282,16 +237,16 @@ class StudyPlanner:
                     (task_id, self.current_user_id),
                 )
                 self.db_connection.commit()
-                print(Fore.GREEN + "Task deleted successfully!")
+                print("Task deleted successfully!")
             except Error as e:
-                print(Fore.RED + f"Error deleting task: {e}")
+                print(f"Error deleting task: {e}")
         else:
-            print(Fore.YELLOW + "Task deletion canceled.")
+            print("Task deletion canceled.")
 
         cursor.close()
 
     def view_tasks(self):
-        print(Fore.MAGENTA + "\n---------- View Tasks ----------")
+        print("\n---------- View Tasks ----------")
         cursor = self.db_connection.cursor(dictionary=True)
 
         try:
@@ -302,75 +257,40 @@ class StudyPlanner:
 
             tasks = cursor.fetchall()
             if not tasks:
-                print(Fore.YELLOW + "You have no tasks scheduled.\n")
+                print("You have no tasks scheduled.\n")
                 return
 
-            choice = (
-                cinput(
-                    Fore.MAGENTA,
-                    "Do you want to view tasks in tabular or detailed format ? (t/d): ",
-                    Fore.CYAN,
-                )
-                .strip()
-                .lower()
-            ) or "t"
+            print("Here are your scheduled tasks:\n")
+            print("===========================================")
 
-            if choice == "t":
-                table_data = [
-                    [
-                        task["id"],
-                        task["subject"],
-                        task["title"],
-                        f"{task['hours']} hours",
-                        task["due_date"],
-                        "Completed" if task["status"] == 1 else "Pending",
-                    ]
-                    for task in tasks
-                ]
-                headers = ["Task ID", "Subject", "Title", "Hours", "Due Date", "Status"]
-                print(
-                    Fore.CYAN
-                    + tabulate(table_data, headers=headers, tablefmt="fancy_grid")
-                )
-            else:
-                print(Fore.CYAN + "Here are your scheduled tasks:\n")
-                print(Fore.GREEN + "===========================================")
-
-                for task in tasks:
-                    print(Fore.YELLOW + f"Task ID: {task['id']}")
-                    print(Fore.CYAN + f"Subject  : {task['subject']}")
-                    print(Fore.CYAN + f"Title    : {task['title']}")
-                    print(Fore.CYAN + f"Hours    : {task['hours']} hours")
-                    print(Fore.CYAN + f"Due Date : {task['due_date']}")
-                    print(
-                        Fore.CYAN
-                        + f"Status : {'Completed' if task['status'] == 1 else 'Pending'}"
-                    )
-                    print(Fore.GREEN + "-------------------------------------------")
+            for task in tasks:
+                print(f"\nTask ID: {task['id']}")
+                print(f"Subject  : {task['subject']}")
+                print(f"Title    : {task['title']}")
+                print(f"Hours    : {task['hours']} hours")
+                print(f"Due Date : {task['due_date']}")
+                print(f"Status : {'Completed' if task['status'] == 1 else 'Pending'}")
+                print("-------------------------------------------")
 
         except Error as e:
-            print(Fore.RED + f"Error retrieving tasks: {e}")
+            print(f"Error retrieving tasks: {e}")
         finally:
             cursor.close()
 
     def generate_report(self):
-        print(Fore.MAGENTA + "\n---------- Generate Report ----------")
+        print("\n---------- Generate Report ----------")
         cursor = self.db_connection.cursor(dictionary=True)
 
         filter_choice = (
-            cinput(
-                Fore.MAGENTA,
-                "Do you want to filter the report by subject, status, date, or none? (subject/status/date/none): ",
-                Fore.CYAN,
+            input(
+                "Do you want to filter the report by subject, status, date, or none? (subject/status/date/none): "
             )
             .strip()
             .lower()
         )
 
         if filter_choice == "subject":
-            subject_filter = cinput(
-                Fore.MAGENTA, "Enter the subject to filter by: ", Fore.CYAN
-            ).strip()
+            subject_filter = input("Enter the subject to filter by: ").strip()
             query = """
                     SELECT subject, SUM(hours) as total_hours, COUNT(*) as task_count, 
                         SUM(CASE WHEN status = 1 THEN 1 ELSE 0 END) as completed_tasks,
@@ -383,11 +303,7 @@ class StudyPlanner:
 
         elif filter_choice == "status":
             status_filter = (
-                cinput(
-                    Fore.MAGENTA,
-                    "Enter the status to filter by (completed/pending): ",
-                    Fore.CYAN,
-                )
+                input("Enter the status to filter by (completed/pending): ")
                 .strip()
                 .lower()
             )
@@ -426,66 +342,48 @@ class StudyPlanner:
                 """
             cursor.execute(query, (self.current_user_id,))
 
-        result = cursor.fetchall()
+        tasks = cursor.fetchall()
 
-        if not result:
-            print(Fore.YELLOW + "No data found for the selected filter.")
+        if not tasks:
+            print("No data found for the selected filter.")
             cursor.close()
             return
 
         if filter_choice == "date":
-            table_data = [
-                [
-                    record["due_date"],
-                    record["completed_tasks"],
-                    record["pending_tasks"],
-                ]
-                for record in result
-            ]
-            headers = ["Due Date", "Completed Tasks", "Pending Tasks"]
+            for task in tasks:
+                print(f"\nDue Date: {task['due_date']}")
+                print(f"Completed Tasks  : {task['completed_tasks']}")
+                print(f"Pending Tasks    : {task['pending_tasks']}")
+                print("-------------------------------------------")
         else:
-            table_data = [
-                [
-                    entry["subject"],
-                    entry["total_hours"],
-                    entry["task_count"],
-                    entry["completed_tasks"],
-                    entry["pending_tasks"],
-                ]
-                for entry in result
-            ]
-            headers = ["Subject", "Total Hours", "Total Tasks", "Completed", "Pending"]
-
-        print(Fore.CYAN + tabulate(table_data, headers=headers, tablefmt="fancy_grid"))
+            for task in tasks:
+                print(f"\nSubject  : {task['subject']}")
+                print(f"Total Hours    : {task['total_hours']} hours")
+                print(f"Task Count    : {task['task_count']}")
+                print(f"Completed Tasks : {task['completed_tasks']}")
+                print(f"Pending Tasks : {task['pending_tasks']}")
+                print("-------------------------------------------")
         cursor.close()
 
     def edit_account(self):
-        print(Fore.MAGENTA + "\n---------- Edit Account ----------")
+        print("\n---------- Edit Account ----------")
         cursor = self.db_connection.cursor(dictionary=True)
         cursor.execute(
             "SELECT username FROM users WHERE id = %s", (self.current_user_id,)
         )
         user = cursor.fetchone()
         current_username = user["username"]
-        print(Fore.CYAN + f"Current Username: {current_username}")
+        print(f"Current Username: {current_username}")
 
         change_username = (
-            cinput(
-                Fore.MAGENTA,
-                "Do you want to change your username? (y/n): ",
-                Fore.CYAN,
-            )
-            .strip()
-            .lower()
+            input("Do you want to change your username? (y/n): ").strip().lower()
         )
 
         if change_username == "y":
-            new_username = cinput(
-                Fore.MAGENTA, "Enter a new username: ", Fore.CYAN
-            ).strip()
+            new_username = input("Enter a new username: ").strip()
             cursor.execute("SELECT id FROM users WHERE username = %s", (new_username,))
             if cursor.fetchone():
-                print(Fore.RED + "Username already taken, please choose another.")
+                print("Username already taken, please choose another.")
                 cursor.close()
                 return
 
@@ -494,24 +392,18 @@ class StudyPlanner:
                 (new_username, self.current_user_id),
             )
             self.db_connection.commit()
-            print(Fore.GREEN + "Username updated successfully!")
+            print("Username updated successfully!")
 
         change_password = (
-            cinput(
-                Fore.MAGENTA,
-                "Do you want to change your password? (y/n): ",
-                Fore.CYAN,
-            )
-            .strip()
-            .lower()
+            input("Do you want to change your password? (y/n): ").strip().lower()
         )
 
         if change_password == "y":
-            password = getpass(Fore.MAGENTA + "Enter a new password: ").strip()
-            re_password = getpass(Fore.MAGENTA + "Re-enter your new password: ").strip()
+            password = input("Enter a new password: ").strip()
+            re_password = input("Re-enter your new password: ").strip()
 
             if password != re_password:
-                print(Fore.RED + "Passwords do not match!")
+                print("Passwords do not match!")
                 cursor.close()
                 return
 
@@ -520,17 +412,13 @@ class StudyPlanner:
                 (password, self.current_user_id),
             )
             self.db_connection.commit()
-            print(Fore.GREEN + "Password updated successfully!")
+            print("Password updated successfully!")
 
         cursor.close()
 
     def main_menu(self):
         while True:
-            print(
-                ColorStyle.BRIGHT
-                + Fore.BLUE
-                + "\n================ Main Menu ================"
-            )
+            print("\n================ Main Menu ================")
             if self.current_user_id:
                 cursor = self.db_connection.cursor(dictionary=True)
                 cursor.execute(
@@ -539,19 +427,17 @@ class StudyPlanner:
                 user = cursor.fetchone()
                 username = user["username"] if user else "User"
                 cursor.close()
-                print(Fore.GREEN + f"Welcome, {username}!")
-                print(Fore.YELLOW + "\nChoose an option from the menu below:")
-                print(Fore.CYAN + "1. Schedule a Task")
-                print(Fore.CYAN + "2. Edit a Task")
-                print(Fore.CYAN + "3. Delete a Task")
-                print(Fore.CYAN + "4. View Tasks")
-                print(Fore.CYAN + "5. Generate Report")
-                print(Fore.CYAN + "6. Edit Account")
-                print(Fore.CYAN + "7. Logout")
-                print(Fore.CYAN + "8. Exit")
-                choice = cinput(
-                    Fore.CYAN + ColorStyle.BRIGHT, "Enter your choice: ", Fore.GREEN
-                )
+                print(f"Welcome, {username}!")
+                print("\nChoose an option from the menu below:")
+                print("1. Schedule a Task")
+                print("2. Edit a Task")
+                print("3. Delete a Task")
+                print("4. View Tasks")
+                print("5. Generate Report")
+                print("6. Edit Account")
+                print("7. Logout")
+                print("8. Exit")
+                choice = input("Enter your choice: ")
 
                 if choice == "1":
                     self.schedule_task()
@@ -566,22 +452,20 @@ class StudyPlanner:
                 elif choice == "6":
                     self.edit_account()
                 elif choice == "7":
-                    print(Fore.GREEN + "Logging out...")
+                    print("Logging out...")
                     self.current_user_id = None
                 elif choice == "8":
-                    print(Fore.GREEN + "Exiting the application. Goodbye!")
+                    print("Exiting the application. Goodbye!")
                     break
                 else:
-                    print(Fore.RED + "Feature not implemented yet!")
+                    print("Feature not implemented yet!")
 
             else:
-                print(Fore.YELLOW + "\nPlease choose an option to proceed:")
-                print(Fore.CYAN + "1. Register")
-                print(Fore.CYAN + "2. Login")
-                print(Fore.CYAN + "3. Exit")
-                choice = cinput(
-                    Fore.CYAN + ColorStyle.BRIGHT, "Enter your choice: ", Fore.GREEN
-                )
+                print("\nPlease choose an option to proceed:")
+                print("1. Register")
+                print("2. Login")
+                print("3. Exit")
+                choice = input("Enter your choice: ")
 
                 if choice == "1":
                     self.register_user()
@@ -589,10 +473,10 @@ class StudyPlanner:
                     if self.login():
                         continue
                 elif choice == "3":
-                    print(Fore.GREEN + "Exiting the application. Goodbye!")
+                    print("Exiting the application. Goodbye!")
                     break
                 else:
-                    print(Fore.RED + "Invalid choice. Please try again.")
+                    print("Invalid choice. Please try again.")
 
 
 if __name__ == "__main__":
