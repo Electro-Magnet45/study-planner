@@ -365,6 +365,28 @@ class StudyPlanner:
                 print("-------------------------------------------")
         cursor.close()
 
+    def view_summary(self):
+        cursor = self.db_connection.cursor(dictionary=True)
+        try:
+            cursor.execute(
+                """
+                SELECT 
+                    SUM(CASE WHEN status = 1 THEN 1 ELSE 0 END) AS completed,
+                    SUM(CASE WHEN status = 0 THEN 1 ELSE 0 END) AS pending,
+                    COUNT(*) AS total
+                FROM tasks WHERE user_id = %s
+                """,
+                (self.current_user_id,),
+            )
+            result = cursor.fetchone()
+            print(f"\nCompleted Tasks: {result['completed']}")
+            print(f"Pending Tasks: {result['pending']}")
+            print(f"Total Tasks: {result['total']}")
+        except Error as e:
+            print(f"Error fetching task summary: {e}")
+        finally:
+            cursor.close()
+
     def edit_account(self):
         print("\n---------- Edit Account ----------")
         cursor = self.db_connection.cursor(dictionary=True)
@@ -427,6 +449,7 @@ class StudyPlanner:
                 user = cursor.fetchone()
                 username = user["username"] if user else "User"
                 cursor.close()
+
                 print(f"Welcome, {username}!")
                 print("\nChoose an option from the menu below:")
                 print("1. Schedule a Task")
@@ -434,9 +457,10 @@ class StudyPlanner:
                 print("3. Delete a Task")
                 print("4. View Tasks")
                 print("5. Generate Report")
-                print("6. Edit Account")
-                print("7. Logout")
-                print("8. Exit")
+                print("6. View Summary")
+                print("7. Edit Account")
+                print("8. Logout")
+                print("9. Exit")
                 choice = input("Enter your choice: ")
 
                 if choice == "1":
@@ -450,11 +474,13 @@ class StudyPlanner:
                 elif choice == "5":
                     self.generate_report()
                 elif choice == "6":
-                    self.edit_account()
+                    self.view_summary()
                 elif choice == "7":
+                    self.edit_account()
+                elif choice == "8":
                     print("Logging out...")
                     self.current_user_id = None
-                elif choice == "8":
+                elif choice == "9":
                     print("Exiting the application. Goodbye!")
                     break
                 else:
